@@ -1,0 +1,161 @@
+@startuml
+
+title Caso 2: agregar Pod1 y Pod2 al Cluster1
+
+participant ": TestCase" order 10
+
+create participant "m100: Memoria" order 60
+": TestCase" -> "m100: Memoria": Memoria(100)
+create participant "c5: Cpu" order 70
+": TestCase" -> "c5: Cpu": Cpu(5)
+create participant "bsas: Region" order 170
+": TestCase" -> "bsas: Region": Region("Buenos Aires")
+create participant "nodo1: Nodo" order 30
+": TestCase" -> "nodo1: Nodo": Nodo([m100, c5], bsas)
+
+create participant "m200: Memoria" order 110
+": TestCase" -> "m200: Memoria": Memoria(200)
+create participant "c10: Cpu" order 120
+": TestCase" -> "c10: Cpu": Cpu(10)
+create participant "cba: Region" order 180
+": TestCase" -> "cba: Region": Region("Córdoba")
+create participant "nodo2: Nodo" order 40
+": TestCase" -> "nodo2: Nodo": Nodo([m200, c10], cba)
+
+create participant "cluster1: Cluster" order 20
+": TestCase" -> "cluster1: Cluster": Cluster(nodo1, nodo2)
+
+create participant "ua: UnidadDeAlmacenamiento" order 150
+": TestCase" -> "ua: UnidadDeAlmacenamiento": UnidadDeAlmacenamiento(Region("Buenos Aires"))
+create participant "m90: Memoria" order 190
+": TestCase" -> "m90: Memoria": Memoria(90)
+create participant "c4: Cpu" order 200
+": TestCase" -> "c4: Cpu": Cpu(4)
+create participant "pod1: Pod" order 50
+": TestCase" -> "pod1: Pod": Pod([m90, c4], ua)
+
+create participant "m100b: Memoria" order 210
+": TestCase" -> "m100b: Memoria": Memoria(100)
+create participant "c9: Cpu" order 220
+": TestCase" -> "c9: Cpu": Cpu(9)
+create participant "pod2: Pod" order 100
+": TestCase" -> "pod2: Pod": Pod([m100b, c9])
+activate "pod2: Pod"
+create participant "sa: SinAlmacenamiento" order 160
+"pod2: Pod" -> "sa: SinAlmacenamiento": new
+deactivate "pod2: Pod"
+
+": TestCase" -> "cluster1: Cluster": alojar(pod1)
+activate "cluster1: Cluster"
+loop para cada nodo en [nodo1, nodo2], hasta que uno aloje pod1
+"cluster1: Cluster" -> "nodo1: Nodo": alojar(pod1)
+activate "nodo1: Nodo"
+"nodo1: Nodo" -> "pod1: Pod": alojar([m100, c5], bsas)
+activate "pod1: Pod"
+note right of "pod1: Pod": nuevosRecursosLibres = []\npendientes = [m90, c4]
+
+loop para cada libre en [m100, c5]
+"pod1: Pod" -> "pod1: Pod": consumir(libre, pendientes)
+activate "pod1: Pod"
+loop para cada requerido en pendientes
+"pod1: Pod" -> "m100: Memoria": restar(m90)
+note right: 100 > 90
+create participant "m10: Memoria" order 80
+"m100: Memoria" -> "m10: Memoria": Memoria(10)
+"m100: Memoria" --> "pod1: Pod": m10
+"pod1: Pod" -> "m10: Memoria": restar(c4)
+note right: distinto tipo: devuelve el mismo recurso
+"m10: Memoria" --> "pod1: Pod": m10
+"pod1: Pod" -> "c5: Cpu": restar(c4)
+note right: 5 * 0.90 >= 4
+create participant "c1: Cpu" order 90
+"c5: Cpu" -> "c1: Cpu": Cpu(1)
+"c5: Cpu" --> "pod1: Pod": c1
+end
+deactivate "pod1: Pod"
+end
+
+"pod1: Pod" -> "ua: UnidadDeAlmacenamiento": estaEn(bsas)
+"ua: UnidadDeAlmacenamiento" --> "pod1: Pod": true
+"pod1: Pod" --> "nodo1: Nodo": [m10, c1]
+deactivate "pod1: Pod"
+note right of "nodo1: Nodo": recursosLibres = [m10, c1]
+"nodo1: Nodo" -> "nodo1: Nodo": pods.add(pod1)
+"nodo1: Nodo" --> "cluster1: Cluster": return
+deactivate "nodo1: Nodo"
+end
+"cluster1: Cluster" --> ": TestCase": return
+deactivate "cluster1: Cluster"
+
+": TestCase" -> "cluster1: Cluster": alojar(pod2)
+activate "cluster1: Cluster"
+loop para cada nodo en [nodo1, nodo2], hasta que uno aloje pod2
+"cluster1: Cluster" -> "nodo1: Nodo": alojar(pod2)
+activate "nodo1: Nodo"
+"nodo1: Nodo" -> "pod2: Pod": alojar([m10, c1], bsas)
+activate "pod2: Pod"
+note right of "pod2: Pod": nuevosRecursosLibres = []\npendientes = [m100b, c9]
+
+loop para cada libre en [m10, c1]
+"pod2: Pod" -> "pod2: Pod": consumir(libre, pendientes)
+activate "pod2: Pod"
+loop para cada requerido en pendientes
+"pod2: Pod" -> "m10: Memoria": restar(m100b)
+note right: 10 > 100 es falso
+"m10: Memoria" --> "pod2: Pod": falla: memoria insuficiente
+end
+deactivate "pod2: Pod"
+end
+
+note right of "pod2: Pod": no se llega a verificar el almacenamiento
+"pod2: Pod" --> "nodo1: Nodo": falla
+deactivate "pod2: Pod"
+"nodo1: Nodo" --> "cluster1: Cluster": falla: no se puede alojar pod2
+deactivate "nodo1: Nodo"
+note right of "cluster1: Cluster": se prueba con el siguiente nodo
+
+"cluster1: Cluster" -> "nodo2: Nodo": alojar(pod2)
+activate "nodo2: Nodo"
+"nodo2: Nodo" -> "pod2: Pod": alojar([m200, c10], cba)
+activate "pod2: Pod"
+note right of "pod2: Pod": nuevosRecursosLibres = []\npendientes = [m100b, c9]
+
+loop para cada libre en [m200, c10]
+"pod2: Pod" -> "pod2: Pod": consumir(libre, pendientes)
+activate "pod2: Pod"
+loop para cada requerido en pendientes
+"pod2: Pod" -> "m200: Memoria": restar(m100b)
+note right: 200 > 100
+create participant "m100r: Memoria" order 130
+"m200: Memoria" -> "m100r: Memoria": Memoria(100)
+"m200: Memoria" --> "pod2: Pod": m100r
+"pod2: Pod" -> "m100r: Memoria": restar(c9)
+note right: distinto tipo: devuelve el mismo recurso
+"m100r: Memoria" --> "pod2: Pod": m100r
+"pod2: Pod" -> "c10: Cpu": restar(c9)
+note right: 10 * 0.90 >= 9
+create participant "c1r: Cpu" order 140
+"c10: Cpu" -> "c1r: Cpu": Cpu(1)
+"c10: Cpu" --> "pod2: Pod": c1r
+end
+deactivate "pod2: Pod"
+end
+
+"pod2: Pod" -> "sa: SinAlmacenamiento": estaEn(cba)
+"sa: SinAlmacenamiento" --> "pod2: Pod": true
+"pod2: Pod" --> "nodo2: Nodo": [m100r, c1r]
+deactivate "pod2: Pod"
+note right of "nodo2: Nodo": recursosLibres = [m100r, c1r]
+"nodo2: Nodo" -> "nodo2: Nodo": pods.add(pod2)
+"nodo2: Nodo" --> "cluster1: Cluster": return
+deactivate "nodo2: Nodo"
+end
+"cluster1: Cluster" --> ": TestCase": return
+deactivate "cluster1: Cluster"
+
+": TestCase" -> "nodo1: Nodo": recursosLibres()
+"nodo1: Nodo" --> ": TestCase": [m10, c1]
+": TestCase" -> "nodo2: Nodo": recursosLibres()
+"nodo2: Nodo" --> ": TestCase": [m100r, c1r]
+
+@enduml

@@ -1,0 +1,31 @@
+@startuml
+!pragma layout smetana
+skinparam style strictuml
+skinparam classAttributeIconSize 0
+hide circle
+
+title Diagrama de clases: Recursos
+
+abstract class Recurso {
+    # unidades : int
+
+    # Recurso(unidades)
+    + {abstract} Recurso restar(consumido : Recurso)
+}
+
+class Memoria {
+    + Memoria(unidades)
+    + Recurso restar(consumido : Recurso)
+    + equals(Object)
+}
+
+class Cpu {
+    + Cpu(unidades)
+    + Recurso restar(consumido : Recurso)
+    + equals(Object)
+}
+
+Recurso <|-- Memoria
+Recurso <|-- Cpu
+
+@enduml

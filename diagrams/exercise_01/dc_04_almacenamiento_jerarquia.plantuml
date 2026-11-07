@@ -1,0 +1,38 @@
+@startuml
+!pragma layout smetana
+skinparam style strictuml
+skinparam classAttributeIconSize 0
+hide circle
+hide empty members
+
+title Diagrama de clases: jerarquía de Almacenamiento
+
+interface Almacenamiento <<interface>> {
+    + boolean estaEn(region : Region)
+}
+
+class UnidadDeAlmacenamiento {
+    - region : Region
+
+    + UnidadDeAlmacenamiento(region : Region)
+    + boolean estaEn(region : Region)
+}
+
+class SinAlmacenamiento {
+    + boolean estaEn(region : Region)
+}
+
+note bottom of SinAlmacenamiento
+    Null Object: un pod sin almacenamiento
+    no restringe la región del nodo
+    (estaEn siempre devuelve true).
+end note
+
+' Tipo detallado en dc_03_almacenamiento
+class Region
+
+Almacenamiento <|.. UnidadDeAlmacenamiento
+Almacenamiento <|.. SinAlmacenamiento
+UnidadDeAlmacenamiento --> "1" Region: "region"
+
+@enduml

@@ -1,0 +1,33 @@
+@startuml
+!pragma layout smetana
+skinparam style strictuml
+skinparam classAttributeIconSize 0
+hide circle
+
+title Diagrama de clases: Almacenamiento y Region
+
+interface Almacenamiento <<interface>> {
+    + boolean estaEn(region : Region)
+}
+
+class UnidadDeAlmacenamiento {
+    + UnidadDeAlmacenamiento(region : Region)
+    + boolean estaEn(region : Region)
+}
+
+class SinAlmacenamiento {
+    + boolean estaEn(region : Region)
+}
+
+class Region {
+    - nombre : String
+
+    + Region(nombre)
+    + equals(Object)
+}
+
+Almacenamiento <|.. UnidadDeAlmacenamiento
+Almacenamiento <|.. SinAlmacenamiento
+UnidadDeAlmacenamiento --> "1" Region: "region"
+
+@enduml

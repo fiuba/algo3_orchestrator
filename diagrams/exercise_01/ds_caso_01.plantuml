@@ -1,0 +1,71 @@
+@startuml
+
+title Caso 1: agregar Pod1 al Nodo1
+
+participant ": TestCase" order 10
+
+create participant "m: Memoria" order 40
+": TestCase" -> "m: Memoria": Memoria(100)
+create participant "c: Cpu" order 50
+": TestCase" -> "c: Cpu": Cpu(5)
+create participant "bsas: Region" order 100
+": TestCase" -> "bsas: Region": Region("Buenos Aires")
+create participant "nodo1: Nodo" order 20
+": TestCase" -> "nodo1: Nodo": Nodo([m, c], bsas)
+
+create participant "rosario: Region" order 90
+": TestCase" -> "rosario: Region": Region("Rosario")
+create participant "ua: UnidadDeAlmacenamiento" order 80
+": TestCase" -> "ua: UnidadDeAlmacenamiento": UnidadDeAlmacenamiento(rosario)
+
+create participant "m90: Memoria" order 110
+": TestCase" -> "m90: Memoria": Memoria(90)
+create participant "c4: Cpu" order 120
+": TestCase" -> "c4: Cpu": Cpu(4)
+create participant "pod1: Pod" order 30
+": TestCase" -> "pod1: Pod": Pod([m90, c4], ua)
+
+": TestCase" -> "nodo1: Nodo": alojar(pod1)
+activate "nodo1: Nodo"
+"nodo1: Nodo" -> "pod1: Pod": alojar([m, c], bsas)
+activate "pod1: Pod"
+note right of "pod1: Pod": nuevosRecursosLibres = []\npendientes = [m90, c4]
+
+loop para cada libre en [m, c]
+"pod1: Pod" -> "pod1: Pod": consumir(libre, pendientes)
+activate "pod1: Pod"
+loop para cada requerido en pendientes
+"pod1: Pod" -> "m: Memoria": restar(m90)
+note right: 100 > 90
+create participant "m10: Memoria" order 60
+"m: Memoria" -> "m10: Memoria": Memoria(10)
+"m: Memoria" --> "pod1: Pod": m10
+note right of "pod1: Pod": nuevosRecursosLibres = [m10]\npendientes = [c4]
+"pod1: Pod" -> "m10: Memoria": restar(c4)
+note right: distinto tipo: devuelve el mismo recurso
+"m10: Memoria" --> "pod1: Pod": m10
+"pod1: Pod" -> "c: Cpu": restar(c4)
+note right: 5 * 0.90 >= 4
+create participant "c1: Cpu" order 70
+"c: Cpu" -> "c1: Cpu": Cpu(1)
+"c: Cpu" --> "pod1: Pod": c1
+note right of "pod1: Pod": nuevosRecursosLibres = [m10, c1]\npendientes = []
+end
+deactivate "pod1: Pod"
+end
+
+"pod1: Pod" -> "ua: UnidadDeAlmacenamiento": estaEn(bsas)
+"ua: UnidadDeAlmacenamiento" -> "rosario: Region": equals(bsas)
+"rosario: Region" --> "ua: UnidadDeAlmacenamiento": false
+"ua: UnidadDeAlmacenamiento" --> "pod1: Pod": false
+
+"pod1: Pod" --> "nodo1: Nodo": falla: el almacenamiento no está en la región
+"nodo1: Nodo" --> ": TestCase": falla: no se puede alojar pod1
+note right: nuevosRecursosLibres se descarta: recursosLibres y pods del nodo no se modifican
+deactivate "pod1: Pod"
+deactivate "nodo1: Nodo"
+
+": TestCase" -> "nodo1: Nodo": recursosLibres()
+"nodo1: Nodo" --> ": TestCase": [m, c]
+
+@enduml

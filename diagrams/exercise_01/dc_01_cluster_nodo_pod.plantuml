@@ -1,0 +1,43 @@
+@startuml
+!pragma layout smetana
+skinparam style strictuml
+skinparam classAttributeIconSize 0
+hide circle
+hide empty members
+
+title Diagrama de clases: Cluster, Nodo y Pod
+
+class Cluster {
+    + Cluster(nodos : Nodo...)
+    + alojar(pod : Pod)
+}
+
+class Nodo {
+    + Nodo(recursosLibres : List<Recurso>, region : Region)
+    + alojar(pod : Pod)
+    + List<Recurso> recursosLibres()
+    + List<Pod> pods()
+}
+
+class Pod {
+    + Pod(recursos : List<Recurso>)
+    + Pod(recursos : List<Recurso>, almacenamiento : Almacenamiento)
+    + List<Recurso> alojar(recursosLibres : List<Recurso>, region : Region)
+    - consumir(restantes : List<Recurso>, requerido : Recurso)
+}
+
+' Tipos detallados en dc_02_recursos y dc_03_almacenamiento
+abstract class Recurso
+class Region
+interface Almacenamiento <<interface>>
+
+Cluster o- "1..*" Nodo
+
+Pod "*" --o Nodo
+Nodo o- "*" Recurso: "recursosLibres"
+Nodo o-- "1" Region: "region"
+
+Pod o-- "*" Recurso: "recursosNecesarios"
+Pod *- "1" Almacenamiento
+
+@enduml
